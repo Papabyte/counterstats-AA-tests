@@ -24,75 +24,35 @@ describe('Check AA counterstats rewards', function () {
 		this.donor_1 = await this.network.newHeadlessWallet().ready()
 		this.donor_2 = await this.network.newHeadlessWallet().ready()
 
-		const { unit, error } = await this.genesis.sendBytes({
+		await this.genesis.sendBytes({
 			toAddress: await this.deployer.getAddress(),
 			amount: 1e9,
 		})
-
-		expect(error).to.be.null
-		expect(unit).to.be.validUnit
-
-		await this.network.witnessUntilStable(unit)
-
-		const balance = await this.deployer.getBalance()
-		expect(balance.base.stable).to.be.equal(1e9)
-	})
-
-	it('Send bytes to reporter_1', async () => {
-		const { unit, error } = await this.genesis.sendBytes({
+		await this.genesis.sendBytes({
 			toAddress: await this.reporter_1.getAddress(),
 			amount: 1e9,
 		})
-
-		expect(error).to.be.null
-		expect(unit).to.be.validUnit
-
-		await this.network.witnessUntilStable(unit)
-		const balance = await this.reporter_1.getBalance()
-		expect(balance.base.stable).to.be.equal(1e9)
-	})
-
-	it('Send bytes to reporter_2', async () => {
-		const { unit, error } = await this.genesis.sendBytes({
+		await this.genesis.sendBytes({
 			toAddress: await this.reporter_2.getAddress(),
 			amount: 1e9,
 		})
-
-		expect(error).to.be.null
-		expect(unit).to.be.validUnit
-
-		await this.network.witnessUntilStable(unit)
-		const balance = await this.reporter_2.getBalance()
-		expect(balance.base.stable).to.be.equal(1e9)
-	})
-
-	it('Send bytes to donor 1', async () => {
-		const { unit, error } = await this.genesis.sendBytes({
+		await this.genesis.sendBytes({
 			toAddress: await this.donor_1.getAddress(),
 			amount: 1e9,
 		})
-
-		expect(error).to.be.null
-		expect(unit).to.be.validUnit
-
-		await this.network.witnessUntilStable(unit)
-		const balance = await this.donor_1.getBalance()
-		expect(balance.base.stable).to.be.equal(1e9)
-	})
-
-	it('Send bytes to donor 2', async () => {
-		const { unit, error } = await this.genesis.sendBytes({
+		await this.genesis.sendBytes({
 			toAddress: await this.donor_2.getAddress(),
 			amount: 1e9,
 		})
 
+
 		expect(error).to.be.null
 		expect(unit).to.be.validUnit
 
 		await this.network.witnessUntilStable(unit)
-		const balance = await this.donor_2.getBalance()
-		expect(balance.base.stable).to.be.equal(1e9)
+
 	})
+
 
 	it('Deploy counterstats AA', async () => {
 		const { address, unit, error } = await this.deployer.deployAgent(path.join(__dirname, './agents/counterstats.agent'))
@@ -124,7 +84,6 @@ describe('Check AA counterstats rewards', function () {
 
 		await this.network.witnessUntilStable(response.response_unit)
 		expect(response.bounced).to.be.false
-
 		expect(response.response.responseVars.created_pool).to.be.equal(1)
 		expect(response.response.responseVars.amount).to.be.equal(paymentAmount)
 		expect(response.response.responseVars.your_address).to.be.equal(await this.donor_1.getAddress())

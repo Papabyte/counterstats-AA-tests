@@ -15,6 +15,7 @@
 		$commit = trigger.data.commit;
 		$payment_amount = trigger.output[[asset=base]];
 
+		//input checking for variables used in different blocks
 		if ($exchange AND length($exchange) > 40)
 			bounce('exchange cannot be over 40 chars');
 		if ($exchange AND contains($exchange, '_'))
