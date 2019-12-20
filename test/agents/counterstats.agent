@@ -26,7 +26,6 @@
 			bounce("wallet_id must be an integer");
 		if ($wallet_id AND $wallet_id > 1e14)
 			bounce('wallet_id cannot be over 1e14');
-		$pair = 'p_' || $exchange || '_' || $wallet_id;
 	}",
 	"messages": {
 		"cases": [
@@ -39,8 +38,10 @@
 						bounce('this operation is not committed');
 					if ($specified_key){
 						$key =  $specified_key;
+						$pair = var[$key || '_pair'];
 					}
 					else {
+						$pair = 'p_' || $exchange || '_' || $wallet_id;
 						$num = var[$pair || '_number'] otherwise 0;
 						$old_key = 'k_' || $exchange || '_' || $wallet_id || '_' || ($num);
 						if ((!$num OR var[$old_key] == 'committed') AND !$commit)
@@ -117,6 +118,7 @@
 									if ($bInitialStake){
 										var[$pair || '_exchange'] = $exchange;
 										var[$pair || '_wallet_id'] = $wallet_id;
+										var[$key || '_pair'] = $pair;
 										var[$pair || '_number'] += 1;
 										var[$key] = 'onreview';
 										var[$key || '_initial_outcome'] = $outcome;
@@ -130,7 +132,6 @@
 									if ($bInitialStake OR $would_override_current_outcome){
 										var[$key || '_countdown_start'] = timestamp;
 										var[$key || '_outcome'] = $outcome;
-										response['countdown_started'] = true;
 										response['outcome'] = $outcome;
 									}
 									else
@@ -208,7 +209,7 @@
 							// immediately pay to the initial reporter.  Other stakers (if any) will have to manually request withdrawals
 							$address = var[$key || '_initial_reporter'];
 							$initial_reporter_stake = var[$key || '_total_staked_on_' || $outcome || '_by_' || $address];
-
+							$require_datafeed = var[$key || '_initial_outcome'] == $outcome;
 							if ($initial_reporter_stake){
 								$reward = var['pool_' || $pool_id || '_reward_amount'];
 								$total_winning_stake = var[$key || '_total_staked_on_' || $outcome];
@@ -220,14 +221,14 @@
 						}",
 							"messages": [
 								{
-									"if": "{$outcome == 'in'}",
+									"if": "{$require_datafeed AND $outcome == 'in'}",
 									"app": "data_feed",
 									"payload": {
 										"{$exchange}": "{$wallet_id}"
 									}
 								},
 								{
-									"if": "{$outcome == 'out'}",
+									"if": "{$require_datafeed AND $outcome == 'out'}",
 									"app": "data_feed",
 									"payload": {
 										"{$exchange}": "{"-"||$wallet_id}"
