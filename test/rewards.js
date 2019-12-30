@@ -40,7 +40,7 @@ describe('Check AA counterstats rewards', function () {
 			toAddress: await this.donor_1.getAddress(),
 			amount: 1e9,
 		})
-		await this.genesis.sendBytes({
+		const { unit, error } = 	await this.genesis.sendBytes({
 			toAddress: await this.donor_2.getAddress(),
 			amount: 1e9,
 		})

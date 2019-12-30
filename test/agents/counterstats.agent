@@ -42,11 +42,11 @@
 						$pair = var[$key || '_pair'];
 					}
 					else {
-						$pair = 'p_' || $exchange || '_' || $wallet_id;
+						$pair = 'pair_' || $exchange || '_' || $wallet_id;
 						$num = var[$pair || '_number'] otherwise 0;
-						$old_key = 'k_' || $exchange || '_' || $wallet_id || '_' || ($num);
+						$old_key = 'operation_' || $exchange || '_' || $wallet_id || '_' || ($num);
 						if ((!$num OR var[$old_key] == 'committed') AND !$commit)
-							$key = 'k_' || $exchange || '_' || $wallet_id || '_' || ($num + 1);
+							$key = 'operation_' || $exchange || '_' || $wallet_id || '_' || ($num + 1);
 						else
 							$key = $old_key;
 					}
