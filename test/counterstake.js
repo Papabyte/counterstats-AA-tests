@@ -23,6 +23,7 @@ describe('Check AA counterstats counterstaking', function () {
 		this.reporter_1 = await this.network.newHeadlessWallet().ready()
 		this.reporter_2 = await this.network.newHeadlessWallet().ready()
 		this.reporter_3 = await this.network.newHeadlessWallet().ready()
+		this.controler = await this.network.newHeadlessWallet().ready()
 
 		this.donor_1 = await this.network.newHeadlessWallet().ready()
 
@@ -40,6 +41,10 @@ describe('Check AA counterstats counterstaking', function () {
 		})
 		await this.genesis.sendBytes({
 			toAddress: await this.reporter_3.getAddress(),
+			amount: 1e9,
+		})
+		await this.genesis.sendBytes({
+			toAddress: await this.controler.getAddress(),
 			amount: 1e9,
 		})
 
@@ -67,6 +72,71 @@ describe('Check AA counterstats counterstaking', function () {
 		await this.network.witnessUntilStable(unit)
 	})
 
+	it('set control address', async () => {
+		const control_address = await this.controler.getAddress()
+		const { unit, error } = await this.reporter_1.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				control_address: control_address
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(response.bounced).to.be.false
+		expect(response.response.responseVars.new_control_address).to.be.equal(control_address)
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+		expect(vars["control_address"]).to.be.equal(control_address);
+	})
+
+	it('set min reward', async () => {
+		const { unit, error } = await this.controler.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				min_reward: min_reward
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(response.bounced).to.be.false
+		expect(response.response.responseVars.new_min_reward).to.be.equal(min_reward)
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+		expect(vars["min_reward"]).to.be.equal(min_reward.toString());
+	})
+
+	it('set min stake', async () => {
+		const { unit, error } = await this.controler.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				min_stake: min_stake
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(response.bounced).to.be.false
+		expect(response.response.responseVars.new_min_stake).to.be.equal(min_stake)
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+		expect(vars["min_stake"]).to.be.equal(min_stake.toString());
+	})
+
+
 	it('donor_1 sends a reward for any exchange', async () => {
 		const paymentAmount = 100e6
 		const { unit, error } = await this.donor_1.triggerAaWithData({
@@ -91,7 +161,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(response.response.responseVars.your_address).to.be.equal(await this.donor_1.getAddress())
 		expect(response.response.responseVars.message).to.be.equal("created a reward pool 1 of 100000000 bytes")
 		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
-		expect(vars['pool_id']).to.be.equal("1");
 		expect(vars["pool_1_sponsor"]).to.be.equal(await this.donor_1.getAddress());
 		expect(vars["pool_1_reward_amount"]).to.be.equal("20000000");
 		expect(vars["pool_1_number_of_rewards"]).to.be.equal("5");
@@ -111,7 +180,6 @@ describe('Check AA counterstats counterstaking', function () {
 				url_3: 'http://url3.com',
 				url_4: 'http://url4.com',
 				url_5: 'http://url5.com',
-
 			},
 		})
 
@@ -120,10 +188,9 @@ describe('Check AA counterstats counterstaking', function () {
 
 		const { response } = await this.network.getAaResponseToUnit(unit)
 		await this.network.witnessUntilStable(response.response_unit)
-		expect(response.response.responseVars["pool_id"]).to.be.equal(1)
 		expect(response.response.responseVars["expected_reward"]).to.be.equal(20000000)
 		expect(response.response.responseVars["proposed_outcome"]).to.be.equal("in")
-		expect(response.response.responseVars["outcome"]).to.be.equal("in")
+		expect(response.response.responseVars["resulting_outcome"]).to.be.equal("in")
 		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bittrex_8000_1")
 		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake)
 		expect(response.response.responseVars["staked_on_out"]).to.be.equal(0)
@@ -137,8 +204,6 @@ describe('Check AA counterstats counterstaking', function () {
 
 		expect(vars["pool_1_number_of_rewards"]).to.be.equal("4");
 
-		expect(vars["pair_bittrex_8000_exchange"]).to.be.equal("bittrex")
-		expect(vars["pair_bittrex_8000_wallet_id"]).to.be.equal("8000")
 		expect(vars["pair_bittrex_8000_number"]).to.be.equal("1")
 		expect(vars["operation_bittrex_8000_1"]).to.be.equal("onreview")
 		expect(vars["operation_bittrex_8000_1_initial_outcome"]).to.be.equal("in")
@@ -153,7 +218,7 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(vars["operation_bittrex_8000_1_total_staked"]).to.be.equal(min_stake.toString())
 		expect(vars["operation_bittrex_8000_1_total_staked_on_in"]).to.be.equal(min_stake.toString())
 		expect(vars["operation_bittrex_8000_1_total_staked_on_in_by_" + (await this.reporter_1.getAddress())]).to.be.equal(min_stake.toString())
-
+		expect(vars["wallet_8000_has_operation"]).to.be.equal("1")
 	})
 
 
@@ -199,7 +264,7 @@ describe('Check AA counterstats counterstaking', function () {
 
 	})
 
-	it('reporter 2 remove not added', async () => {
+	it('reporter 1 remove not added', async () => {
 		const { unit, error } = await this.reporter_1.triggerAaWithData({
 			toAddress: this.aaAddress,
 			amount: min_stake,
@@ -251,7 +316,7 @@ describe('Check AA counterstats counterstaking', function () {
 			toAddress: this.aaAddress,
 			amount: min_stake,
 			data: {
-				add_wallet_id: 8000,
+				add_wallet_id: 805,
 				exchange: 'bitforex',
 				pool_id: 1,
 				url_1: url
@@ -276,7 +341,7 @@ describe('Check AA counterstats counterstaking', function () {
 			toAddress: this.aaAddress,
 			amount: min_stake,
 			data: {
-				add_wallet_id: 8000,
+				add_wallet_id: 805,
 				exchange: 'bitforex',
 				pool_id: 1,
 				url_2: url
@@ -300,7 +365,7 @@ describe('Check AA counterstats counterstaking', function () {
 			toAddress: this.aaAddress,
 			amount: min_stake,
 			data: {
-				add_wallet_id: 8000,
+				add_wallet_id: 844,
 				exchange: 'bitforex',
 				pool_id: 1,
 				url_3: url
@@ -324,7 +389,7 @@ describe('Check AA counterstats counterstaking', function () {
 			toAddress: this.aaAddress,
 			amount: min_stake,
 			data: {
-				add_wallet_id: 8000,
+				add_wallet_id: 844,
 				exchange: 'bitforex',
 				pool_id: 1,
 				url_4: url
@@ -348,7 +413,7 @@ describe('Check AA counterstats counterstaking', function () {
 			toAddress: this.aaAddress,
 			amount: min_stake,
 			data: {
-				add_wallet_id: 8000,
+				add_wallet_id: 844,
 				exchange: 'bitforex',
 				pool_id: 1,
 				url_5: url
@@ -383,7 +448,7 @@ describe('Check AA counterstats counterstaking', function () {
 		const { response } = await this.network.getAaResponseToUnit(unit)
 		await this.network.witnessUntilStable(response.response_unit)
 		expect(response.response.responseVars["proposed_outcome"]).to.be.equal("out")
-		expect(response.response.responseVars["outcome"]).to.be.equal("out")
+		expect(response.response.responseVars["resulting_outcome"]).to.be.equal("out")
 		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bittrex_8000_1")
 		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake)
 		expect(response.response.responseVars["staked_on_out"]).to.be.equal(counterstake_1_rpt_2)
@@ -397,8 +462,6 @@ describe('Check AA counterstats counterstaking', function () {
 
 		expect(vars["pool_1_number_of_rewards"]).to.be.equal("4");
 
-		expect(vars["pair_bittrex_8000_exchange"]).to.be.equal("bittrex")
-		expect(vars["pair_bittrex_8000_wallet_id"]).to.be.equal("8000")
 		expect(vars["pair_bittrex_8000_number"]).to.be.equal("1")
 		expect(vars["operation_bittrex_8000_1"]).to.be.equal("onreview")
 		expect(vars["operation_bittrex_8000_1_initial_outcome"]).to.be.equal("in")
@@ -434,7 +497,7 @@ describe('Check AA counterstats counterstaking', function () {
 		const { response } = await this.network.getAaResponseToUnit(unit)
 		await this.network.witnessUntilStable(response.response_unit)
 		expect(response.response.responseVars["proposed_outcome"]).to.be.equal("in")
-		expect(response.response.responseVars["outcome"]).to.be.equal("in")
+		expect(response.response.responseVars["resulting_outcome"]).to.be.equal("in")
 		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bittrex_8000_1")
 		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake + counterstake_2_rpt_1)
 		expect(response.response.responseVars["staked_on_out"]).to.be.equal(counterstake_1_rpt_2)
@@ -448,8 +511,6 @@ describe('Check AA counterstats counterstaking', function () {
 
 		expect(vars["pool_1_number_of_rewards"]).to.be.equal("4");
 
-		expect(vars["pair_bittrex_8000_exchange"]).to.be.equal("bittrex")
-		expect(vars["pair_bittrex_8000_wallet_id"]).to.be.equal("8000")
 		expect(vars["pair_bittrex_8000_number"]).to.be.equal("1")
 		expect(vars["operation_bittrex_8000_1"]).to.be.equal("onreview")
 		expect(vars["operation_bittrex_8000_1_initial_outcome"]).to.be.equal("in")
@@ -463,7 +524,8 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(vars["operation_bittrex_8000_1_total_staked_on_out"]).to.be.equal(counterstake_1_rpt_2.toString())
 		expect(vars["operation_bittrex_8000_1_total_staked_on_in_by_" + (reporter_1_addr)]).to.be.equal((min_stake + counterstake_2_rpt_1).toString())
 		expect(vars["operation_bittrex_8000_1_total_staked_on_out_by_" + (await this.reporter_2.getAddress())]).to.be.equal(counterstake_1_rpt_2.toString())
-	
+		expect(vars["wallet_8000_has_operation"]).to.be.equal("1");
+
 		const { unitObj: refundUnit, error: refundError } = await this.deployer.getUnitInfo({ unit: response.response_unit })
 		expect(refundError).to.be.null
 
@@ -602,7 +664,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(vars["pool_1_number_of_rewards"]).to.be.equal("4");
 
 		expect(vars["pair_bittrex_8000_committed_outcome"]).to.be.equal("in")
-		expect(vars["pair_bittrex_8000_wallet_id"]).to.be.equal("8000")
 		expect(vars["operation_bittrex_8000_1"]).to.be.equal("committed")
 
 		expect(vars["operation_bittrex_8000_1_total_staked_on_in_by_" + (reporter_1_addr)]).to.be.undefined
@@ -636,10 +697,9 @@ describe('Check AA counterstats counterstaking', function () {
 
 		const { response } = await this.network.getAaResponseToUnit(unit)
 		await this.network.witnessUntilStable(response.response_unit)
-		expect(response.response.responseVars["pool_id"]).to.be.equal(1)
 		expect(response.response.responseVars["expected_reward"]).to.be.equal(20000000)
 		expect(response.response.responseVars["proposed_outcome"]).to.be.equal("in")
-		expect(response.response.responseVars["outcome"]).to.be.equal("in")
+		expect(response.response.responseVars["resulting_outcome"]).to.be.equal("in")
 		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bitretard_844566_1")
 		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake * 4)
 		expect(response.response.responseVars["staked_on_out"]).to.be.equal(0)
@@ -653,8 +713,6 @@ describe('Check AA counterstats counterstaking', function () {
 
 		expect(vars["pool_1_number_of_rewards"]).to.be.equal("3");
 
-		expect(vars["pair_bitretard_844566_exchange"]).to.be.equal("bitretard")
-		expect(vars["pair_bitretard_844566_wallet_id"]).to.be.equal("844566")
 		expect(vars["pair_bitretard_844566_number"]).to.be.equal("1")
 		expect(vars["operation_bitretard_844566_1"]).to.be.equal("onreview")
 		expect(vars["operation_bitretard_844566_1_initial_outcome"]).to.be.equal("in")
@@ -686,7 +744,7 @@ describe('Check AA counterstats counterstaking', function () {
 		const { response } = await this.network.getAaResponseToUnit(unit)
 		await this.network.witnessUntilStable(response.response_unit)
 		expect(response.response.responseVars["proposed_outcome"]).to.be.equal("out")
-		expect(response.response.responseVars["outcome"]).to.be.equal("in")
+		expect(response.response.responseVars["resulting_outcome"]).to.be.equal("in")
 		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bitretard_844566_1")
 		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake * 4)
 		expect(response.response.responseVars["staked_on_out"]).to.be.equal(min_stake)
@@ -700,8 +758,6 @@ describe('Check AA counterstats counterstaking', function () {
 
 		expect(vars["pool_1_number_of_rewards"]).to.be.equal("3");
 
-		expect(vars["pair_bitretard_844566_exchange"]).to.be.equal("bitretard")
-		expect(vars["pair_bitretard_844566_wallet_id"]).to.be.equal("844566")
 		expect(vars["pair_bitretard_844566_number"]).to.be.equal("1")
 		expect(vars["operation_bitretard_844566_1"]).to.be.equal("onreview")
 		expect(vars["operation_bitretard_844566_1_initial_outcome"]).to.be.equal("in")
@@ -735,7 +791,7 @@ describe('Check AA counterstats counterstaking', function () {
 		const { response } = await this.network.getAaResponseToUnit(unit)
 		await this.network.witnessUntilStable(response.response_unit)
 		expect(response.response.responseVars["proposed_outcome"]).to.be.equal("out")
-		expect(response.response.responseVars["outcome"]).to.be.equal("out")
+		expect(response.response.responseVars["resulting_outcome"]).to.be.equal("out")
 		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bitretard_844566_1")
 		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake * 4)
 		expect(response.response.responseVars["staked_on_out"]).to.be.equal(min_stake * 6)
@@ -749,8 +805,6 @@ describe('Check AA counterstats counterstaking', function () {
 
 		expect(vars["pool_1_number_of_rewards"]).to.be.equal("3");
 
-		expect(vars["pair_bitretard_844566_exchange"]).to.be.equal("bitretard")
-		expect(vars["pair_bitretard_844566_wallet_id"]).to.be.equal("844566")
 		expect(vars["pair_bitretard_844566_number"]).to.be.equal("1")
 		expect(vars["operation_bitretard_844566_1"]).to.be.equal("onreview")
 		expect(vars["operation_bitretard_844566_1_initial_outcome"]).to.be.equal("in")
@@ -1004,14 +1058,194 @@ describe('Check AA counterstats counterstaking', function () {
 
 		const { unitObj: payoutUnit, error: payoutError } = await this.deployer.getUnitInfo({ unit: response.response_unit })
 		expect(payoutError).to.be.null
-		console.log(JSON.stringify(payoutUnit))
 		const paymentMessage = payoutUnit.unit.messages.find(m => m.app === 'payment')
 		const payout = paymentMessage.payload.outputs.find(out => address_reporter_3.includes(out.address))
 
 		expect(payout.amount).to.be.equal(payout_reporter_3)
 
+		})
+
+		it('reporter 1 add wallet in operation', async () => {
+			const { unit, error } = await this.reporter_1.triggerAaWithData({
+				toAddress: this.aaAddress,
+				amount: min_stake,
+				data: {
+					exchange: 'bitfool',
+					pool_id: 1,
+					add_wallet_id: 8000
+				},
+			})
+	
+			expect(error).to.be.null
+			expect(unit).to.be.validUnit
+	
+			const { response } = await this.network.getAaResponseToUnit(unit)
+			await this.network.witnessUntilStable(response.response_unit)
+	
+			expect(response.bounced).to.be.true
+			expect(response.response.error).to.be.equal("this wallet id belongs or is being added to another exchange")
+	
+		})
+
+		it('reporter 1 remove from bittrex', async () => {
+			const { unit, error } = await this.reporter_1.triggerAaWithData({
+				toAddress: this.aaAddress,
+				amount: min_stake,
+				data: {
+					exchange: 'bittrex',
+					pool_id: 1,
+					remove_wallet_id: 8000,
+					url_1: "http://url1.com"
+				},
+			})
+	
+			expect(error).to.be.null
+			expect(unit).to.be.validUnit
+	
+			const { response } = await this.network.getAaResponseToUnit(unit)
+			await this.network.witnessUntilStable(response.response_unit)
+
+			expect(response.response.responseVars["expected_reward"]).to.be.equal(20000000)
+			expect(response.response.responseVars["proposed_outcome"]).to.be.equal("out")
+			expect(response.response.responseVars["resulting_outcome"]).to.be.equal("out")
+			expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bittrex_8000_2")
+			expect(response.response.responseVars["staked_on_out"]).to.be.equal(min_stake)
+			expect(response.response.responseVars["staked_on_in"]).to.be.equal(0)
+			expect(response.response.responseVars["your_address"]).to.be.equal(await this.reporter_1.getAddress())
+			expect(response.response.responseVars["your_stake"]).to.be.equal(min_stake)
+			expect(response.response.responseVars["accepted_amount"]).to.be.equal(min_stake)
+	
+			expect(response.bounced).to.be.false
+	
+			const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+	
+			expect(vars["pool_1_number_of_rewards"]).to.be.equal("3");
+	
+			expect(vars["pair_bittrex_8000_number"]).to.be.equal("2")
+			expect(vars["operation_bittrex_8000_2"]).to.be.equal("onreview")
+			expect(vars["operation_bittrex_8000_2_initial_outcome"]).to.be.equal("out")
+			expect(vars["operation_bittrex_8000_2_initial_reporter"]).to.be.equal(await this.reporter_1.getAddress())
+			expect(vars["operation_bittrex_8000_2_pool_id"]).to.be.equal("1")
+			expect(vars["operation_bittrex_8000_2_url_proof_for_out_1"]).to.be.equal("http://url1.com")
+			expect(vars["operation_bittrex_8000_2_url_id_proof_for_out"]).to.be.equal("1")
+			expect(vars["operation_bittrex_8000_2_total_staked"]).to.be.equal(min_stake.toString())
+			expect(vars["operation_bittrex_8000_2_total_staked_on_out"]).to.be.equal(min_stake.toString())
+			expect(vars["operation_bittrex_8000_2_total_staked_on_out_by_" + (await this.reporter_1.getAddress())]).to.be.equal(min_stake.toString())
+			expect(vars["wallet_8000_has_operation"]).to.be.equal("1");
+	
+		})
+
+
+		it('reporter 2 commit', async () => {
+			const shift = (challenge_period_length+ 1000) + 's'
+			await this.network.timetravel({ shift: shift})
+			const { unit, error } = await this.reporter_2.triggerAaWithData({
+				toAddress: this.aaAddress,
+				amount: 10000,
+				data: {
+					operation_id: 'operation_bittrex_8000_2',
+					exchange: 'bittrex',
+					commit: "1"
+				},
+			})
+	
+			expect(error).to.be.null
+			expect(unit).to.be.validUnit
+			const { response } = await this.network.getAaResponseToUnit(unit)
+			await this.network.witnessUntilStable(response.response_unit)
+
+			const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+
+			expect(vars["wallet_8000_has_operation"]).to.be.undefined;
+			const { unitObj: payoutUnit, error: payoutError } = await this.deployer.getUnitInfo({ unit: response.response_unit })
+			expect(payoutError).to.be.null
+
+			expect(Utils.hasOnlyTheseExternalPayments(payoutUnit, [{
+				address: await this.reporter_1.getAddress(),
+				amount: 20000000 + min_stake
+			}])).to.be.true
+
+			const payload = payoutUnit.unit.messages.find(m => m.app === 'data_feed')
+			expect(payload.payload.bittrex).to.be.equal('-8000')
+
 	})
 
+	it('reporter 1 add wallet removed from operation, without reward', async () => {
+		const { unit, error } = await this.reporter_1.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: min_stake * 5,
+			data: {
+				exchange: 'bitfool',
+				add_wallet_id: 8000,
+				url_1: "https://link1.com"
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(response.response.responseVars["proposed_outcome"]).to.be.equal("in")
+		expect(response.response.responseVars["resulting_outcome"]).to.be.equal("in")
+		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bitfool_8000_1")
+		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake * 5)
+		expect(response.response.responseVars["staked_on_out"]).to.be.equal(0)
+		expect(response.response.responseVars["your_address"]).to.be.equal(await this.reporter_1.getAddress())
+		expect(response.response.responseVars["your_stake"]).to.be.equal(min_stake * 5)
+		expect(response.response.responseVars["accepted_amount"]).to.be.equal(min_stake * 5)
+
+		expect(response.bounced).to.be.false
+
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+
+
+		expect(vars["pair_bitfool_8000_number"]).to.be.equal("1")
+		expect(vars["operation_bitfool_8000_1"]).to.be.equal("onreview")
+		expect(vars["operation_bitfool_8000_1_initial_outcome"]).to.be.equal("in")
+		expect(vars["operation_bitfool_8000_1_initial_reporter"]).to.be.equal(await this.reporter_1.getAddress())
+		expect(vars["operation_bitfool_8000_1_pool_id"]).to.be.undefined
+		expect(vars["operation_bitfool_8000_1_url_proof_for_in_1"]).to.be.equal("https://link1.com")
+		expect(vars["operation_bitfool_8000_1_url_id_proof_for_in"]).to.be.equal("1")
+		expect(vars["operation_bitfool_8000_1_total_staked"]).to.be.equal((min_stake * 5).toString())
+		expect(vars["operation_bitfool_8000_1_total_staked_on_in"]).to.be.equal((min_stake * 5).toString())
+		expect(vars["operation_bitfool_8000_1_total_staked_on_in_by_" + (await this.reporter_1.getAddress())]).to.be.equal((min_stake * 5).toString())
+		expect(vars["wallet_8000_has_operation"]).to.be.equal("1")
+
+	})
+	
+	it('reporter 2 commit', async () => {
+		const shift = (challenge_period_length+ 1000) + 's'
+		await this.network.timetravel({ shift: shift})
+		const { unit, error } = await this.reporter_2.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				operation_id: 'operation_bitfool_8000_1',
+				commit: "1"
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+		const { response } = await this.network.getAaResponseToUnit(unit)
+		await this.network.witnessUntilStable(response.response_unit)
+
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+
+		expect(vars["wallet_8000_has_operation"]).to.be.equal("1")
+		const { unitObj: payoutUnit, error: payoutError } = await this.deployer.getUnitInfo({ unit: response.response_unit })
+		expect(payoutError).to.be.null
+
+		expect(Utils.hasOnlyTheseExternalPayments(payoutUnit, [{
+			address: await this.reporter_1.getAddress(),
+			amount: min_stake * 5
+		}])).to.be.true
+
+		const payload = payoutUnit.unit.messages.find(m => m.app === 'data_feed')
+		expect(payload.payload.bitfool).to.be.equal('8000')
+
+})
 
 	after(async () => {
 		// uncomment this line to pause test execution to get time for Obyte DAG explorer inspection

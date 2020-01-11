@@ -23,6 +23,7 @@ describe('Check AA counterstats rewards', function () {
 		this.reporter_2 = await this.network.newHeadlessWallet().ready()
 		this.donor_1 = await this.network.newHeadlessWallet().ready()
 		this.donor_2 = await this.network.newHeadlessWallet().ready()
+		this.controler = await this.network.newHeadlessWallet().ready()
 
 		await this.genesis.sendBytes({
 			toAddress: await this.deployer.getAddress(),
@@ -45,6 +46,10 @@ describe('Check AA counterstats rewards', function () {
 			amount: 1e9,
 		})
 
+		await this.genesis.sendBytes({
+			toAddress: await this.controler.getAddress(),
+			amount: 1e9,
+		})
 
 		expect(error).to.be.null
 		expect(unit).to.be.validUnit
@@ -64,6 +69,71 @@ describe('Check AA counterstats rewards', function () {
 		this.aaAddress = address
 
 		await this.network.witnessUntilStable(unit)
+	})
+
+
+	it('set control address', async () => {
+		const control_address = await this.controler.getAddress()
+		const { unit, error } = await this.reporter_1.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				control_address: control_address
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(response.bounced).to.be.false
+		expect(response.response.responseVars.new_control_address).to.be.equal(control_address)
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+		expect(vars["control_address"]).to.be.equal(control_address);
+	})
+
+	it('set min reward', async () => {
+		const { unit, error } = await this.controler.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				min_reward: min_reward
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(response.bounced).to.be.false
+		expect(response.response.responseVars.new_min_reward).to.be.equal(min_reward)
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+		expect(vars["min_reward"]).to.be.equal(min_reward.toString());
+	})
+
+	it('set min stake', async () => {
+		const { unit, error } = await this.controler.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				min_stake: min_stake
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(response.bounced).to.be.false
+		expect(response.response.responseVars.new_min_stake).to.be.equal(min_stake)
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+		expect(vars["min_stake"]).to.be.equal(min_stake.toString());
 	})
 
 	it('donor_1 sends a reward for any exchange', async () => {
@@ -131,7 +201,6 @@ describe('Check AA counterstats rewards', function () {
 		expect(vars["pool_2_sponsor"]).to.be.equal(await this.donor_2.getAddress());
 		expect(vars["pool_2_reward_amount"]).to.be.equal("25000000");
 		expect(vars["pool_2_number_of_rewards"]).to.be.equal("2");
-		expect(vars["pool_2_exchange"]).to.be.equal("bittrex");
 
 	})
 
@@ -412,7 +481,6 @@ describe('Check AA counterstats rewards', function () {
 		expect(vars["pool_2_sponsor"]).to.be.equal(await this.donor_2.getAddress());
 		expect(vars["pool_2_reward_amount"]).to.be.equal("25000000");
 		expect(vars["pool_2_number_of_rewards"]).to.be.equal("1");
-		expect(vars["pool_2_exchange"]).to.be.equal("bittrex");
 
 	})
 
@@ -421,7 +489,7 @@ describe('Check AA counterstats rewards', function () {
 			toAddress: this.aaAddress,
 			amount: min_stake,
 			data: {
-				add_wallet_id: 8000,
+				add_wallet_id: 8010,
 				exchange: 'bitforex',
 				pool_id: '2.5'
 			},
@@ -461,7 +529,6 @@ describe('Check AA counterstats rewards', function () {
 		expect(vars["pool_2_sponsor"]).to.be.equal(await this.donor_2.getAddress());
 		expect(vars["pool_2_reward_amount"]).to.be.equal("25000000");
 		expect(vars["pool_2_number_of_rewards"]).to.be.equal("1");
-		expect(vars["pool_2_exchange"]).to.be.equal("bittrex");
 
 	})
 
@@ -490,7 +557,6 @@ describe('Check AA counterstats rewards', function () {
 		expect(vars["pool_2_sponsor"]).to.be.equal(await this.donor_2.getAddress());
 		expect(vars["pool_2_reward_amount"]).to.be.equal("25000000");
 		expect(vars["pool_2_number_of_rewards"]).to.be.equal("2");
-		expect(vars["pool_2_exchange"]).to.be.equal("bittrex");
 
 	})
 

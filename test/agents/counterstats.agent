@@ -2,8 +2,8 @@
 	"init": "{
 		if (trigger.output[[asset!=base]].asset != 'none')
 			bounce('foreign coins');
-		$min_stake = 1e6;
-		$min_reward = 10e6;
+		$min_stake = var['min_stake'];
+		$min_reward = var['min_reward'];
 		$coef = 1.5;
 		$overpayment_fee = 1000;
 		$period_length = 3600;
@@ -38,8 +38,12 @@
 					if ($specified_key AND var[$specified_key] != 'committed' AND !$commit)
 						bounce('this operation is not committed');
 					if ($specified_key){
-						$key =  $specified_key;
-						$pair = var[$key || '_pair'];
+						$key = $specified_key;
+						$key_with_prefix_removed = substring($key, 10);
+						$extracted_exchange = substring($key_with_prefix_removed, 0, index_of($key_with_prefix_removed, '_'));
+						$key_with_prefix_and_exchange_removed = substring($key_with_prefix_removed, length($extracted_exchange) + 1);
+						$extracted_wallet_id = substring($key_with_prefix_and_exchange_removed, 0, index_of($key_with_prefix_and_exchange_removed, '_'));
+						$pair = 'pair_' || $extracted_exchange || '_' || $extracted_wallet_id;
 					}
 					else {
 						$pair = 'pair_' || $exchange || '_' || $wallet_id;
@@ -62,7 +66,7 @@
 							if ($payment_amount < $min_stake)
 								bounce("min stake is" || $min_stake);
 							if ($specified_key)
-								bounce("you can specify operation id only for withdrawal");
+								bounce("you can specify operation id only for commit or withdrawal");
 							$outcome = $add_wallet_id ? 'in' : 'out';
 							$bInitialStake = !var[$key];
 
@@ -71,17 +75,19 @@
 									bounce("this wallet id is not active");
 								if($add_wallet_id AND var[$pair||"_committed_outcome"] AND $outcome == var[$pair||"_committed_outcome"])
 									bounce("committed outcome for this pair is already " || $outcome);
+								if (var['wallet_'|| $wallet_id||'_has_operation'] AND $add_wallet_id)
+									bounce("this wallet id belongs or is being added to another exchange");
 								$pool_id = trigger.data.pool_id;
-								if (!$pool_id)
-									bounce('please specify a reward pool id');
-								if (!is_integer(+$pool_id))
-									bounce("pool_id must be an integer");
-								$number_of_rewards = var['pool_' || $pool_id || '_number_of_rewards'];
-								if (!$number_of_rewards)
-									bounce("pool " || $pool_id || " doesn't exist or is empty");
-								$pool_exchange = var['pool_' || $pool_id || '_exchange'];
-								if ($pool_exchange AND $pool_exchange != $exchange)
-									bounce("pool " || $pool_id || " is for exchange " || $pool_exchange || " only");
+								if ($pool_id){
+									if (!is_integer(+$pool_id))
+										bounce("pool_id must be an integer");
+									$number_of_rewards = var['pool_' || $pool_id || '_number_of_rewards'];
+									if (!$number_of_rewards)
+										bounce("pool " || $pool_id || " doesn't exist or is empty");
+									$pool_exchange = var['pool_' || $pool_id || '_exchange'];
+									if ($pool_exchange AND $pool_exchange != $exchange)
+										bounce("pool " || $pool_id || " is for exchange " || $pool_exchange || " only");
+								}
 								return true;
 							}
 							// else expect a counterstake
@@ -96,7 +102,6 @@
 							$would_override_current_outcome = ($stake_on_proposed_outcome + $payment_amount >= $required_to_challenge);
 							if ($would_override_current_outcome)
 								$excess = $stake_on_proposed_outcome + $payment_amount - $required_to_challenge;
-
 							true
 						}",
 							"messages": [
@@ -117,26 +122,26 @@
 									"app": "state",
 									"state": "{
 									if ($bInitialStake){
-										var[$pair || '_exchange'] = $exchange;
-										var[$pair || '_wallet_id'] = $wallet_id;
 										var[$key || '_pair'] = $pair;
 										var[$pair || '_number'] += 1;
 										var[$key] = 'onreview';
 										var[$key || '_initial_outcome'] = $outcome;
 										var[$key || '_initial_reporter'] = trigger.address;
-										var['pool_' || $pool_id || '_number_of_rewards'] -= 1;
-										var[$key || '_pool_id'] = $pool_id; // we'll need it if the feed is not accepted and the reward needs to be returned to the pool
-										response['pool_id'] = $pool_id;
-										response['expected_reward'] = var['pool_' || $pool_id || '_reward_amount'];
+										var['wallet_'|| $wallet_id||'_has_operation'] = true;
+										if ($pool_id){
+											var['pool_' || $pool_id || '_number_of_rewards'] -= 1;
+											var[$key || '_pool_id'] = $pool_id; // we'll need it if the feed is not accepted and the reward needs to be returned to the pool
+											response['expected_reward'] = var['pool_' || $pool_id || '_reward_amount'];
+										}
 									}
 									response['proposed_outcome'] = $outcome;
 									if ($bInitialStake OR $would_override_current_outcome){
 										var[$key || '_countdown_start'] = timestamp;
 										var[$key || '_outcome'] = $outcome;
-										response['outcome'] = $outcome;
+										response['resulting_outcome'] = $outcome;
 									}
 									else
-										response['outcome'] = $current_outcome;
+										response['resulting_outcome'] = $current_outcome;
 
 									$accepted_amount = $payment_amount - $excess;
 									var[$key || '_total_staked'] += $accepted_amount;
@@ -186,7 +191,7 @@
 										var[$key || '_url_proof_for_' || $outcome ||'_' || $url_5_id] = $url_5;
 									}
 									response['operation_id'] = $key;
-									response['staked_on_in'] = var[$key || '_total_staked_on_in'];
+									response['staked_on_in'] = var[$key || '_total_staked_on_in'] otherwise 0;
 									response['staked_on_out'] = var[$key || '_total_staked_on_out'] otherwise 0;
 									response['your_address'] = trigger.address;
 									response['accepted_amount'] = $accepted_amount;
@@ -212,7 +217,7 @@
 							$initial_reporter_stake = var[$key || '_total_staked_on_' || $outcome || '_by_' || $address];
 							$require_datafeed = var[$key || '_initial_outcome'] == $outcome;
 							if ($initial_reporter_stake){
-								$reward = var['pool_' || $pool_id || '_reward_amount'];
+								$reward = var['pool_' || $pool_id || '_reward_amount'] otherwise 0;
 								$total_winning_stake = var[$key || '_total_staked_on_' || $outcome];
 								$total_stake = var[$key || '_total_staked'];
 								$amount = round($initial_reporter_stake / $total_winning_stake * $total_stake);
@@ -225,14 +230,14 @@
 									"if": "{$require_datafeed AND $outcome == 'in'}",
 									"app": "data_feed",
 									"payload": {
-										"{$exchange}": "{$wallet_id}"
+										"{$exchange otherwise $extracted_exchange}": "{$wallet_id otherwise $extracted_wallet_id}"
 									}
 								},
 								{
 									"if": "{$require_datafeed AND $outcome == 'out'}",
 									"app": "data_feed",
 									"payload": {
-										"{$exchange}": "{"-"||$wallet_id}"
+										"{$exchange otherwise $extracted_exchange}": "{"-"||($wallet_id otherwise $extracted_wallet_id)}"
 									}
 								},
 								{
@@ -251,19 +256,21 @@
 								{
 									"app": "state",
 									"state": "{
-									var[$key] = 'committed';
-									var[$pair||"_committed_outcome"] = $outcome;
-									if ($initial_reporter_stake){
-										var[$key || '_total_staked_on_' || $outcome || '_by_' || $address] = false;
-									response['paid_out_amount'] = $full_amount;
-									response['paid_out_address'] = $address;
-									}
-									else // return the reward to the pool
-										var['pool_' || $pool_id || '_number_of_rewards'] += 1;
-									response['pair'] = $pair;
-									response['operation_id'] = $key;
-									response['committed_outcome'] = $outcome;
-								}"
+										var[$key] = 'committed';
+										var[$pair||"_committed_outcome"] = $outcome;
+										if ($outcome == 'out')
+											var['wallet_'||($wallet_id otherwise $extracted_wallet_id)||'_has_operation'] = false;
+										if ($initial_reporter_stake){
+											var[$key || '_total_staked_on_' || $outcome || '_by_' || $address] = false;
+										response['paid_out_amount'] = $full_amount;
+										response['paid_out_address'] = $address;
+										}
+										else if ($pool_id)// return the reward to the pool
+											var['pool_' || $pool_id || '_number_of_rewards'] += 1;
+										response['pair'] = $pair;
+										response['operation_id'] = $key;
+										response['committed_outcome'] = $outcome;
+									}"
 								}
 							]
 						},
@@ -408,7 +415,84 @@
 					}"
 					}
 				]
-			}
+			},
+			{
+				"if": "{trigger.data.nickname}",
+				"init":"{
+					$nickname = trigger.data.nickname;
+					if ($nickname AND length($nickname) < 3)
+						bounce('Nickname must be over at least 3 chars');
+					if ($nickname AND length($nickname) > 50)
+						bounce("Nickname can't be over 50 chars");
+					if ($nickname AND contains($nickname, '_'))
+						bounce('Nickname cannot contain underscore');
+				}",
+				"messages": [
+					{
+						"app": "state",
+						"state": "{
+						var['nickname_' || trigger.address] = trigger.data.nickname;
+						response['your_address'] = trigger.address;
+						response['nickname'] = trigger.data.nickname;
+						response['message'] = "Nickname changed for " || trigger.data.nickname;
+					}"
+					}
+				]
+			},
+			{
+			"if": "{trigger.data.control_address}",
+			"init":"{
+				if (var['control_address'] AND var['control_address'] != trigger.address)
+					bounce('you are not control address');
+				if(!is_valid_address(trigger.data.control_address))
+					bounce('new control address is not a valid address');
+			}",
+			"messages": [
+				{
+					"app": "state",
+					"state": "{
+					var['control_address'] = trigger.data.control_address;
+					response['new_control_address'] = trigger.data.control_address;
+				}"
+				}
+			]
+		},
+		{
+			"if": "{trigger.data.min_reward}",
+			"init":"{
+				if (var['control_address'] != trigger.address)
+					bounce('you are not control address');
+				if (!is_integer(+trigger.data.min_reward))
+					bounce("min_reward must be an integer");
+			}",
+			"messages": [
+				{
+					"app": "state",
+					"state": "{
+					var['min_reward'] = trigger.data.min_reward;
+					response['new_min_reward'] = trigger.data.min_reward;
+				}"
+				}
+			]
+		},
+		{
+			"if": "{trigger.data.min_stake}",
+			"init":"{
+				if (var['control_address'] != trigger.address)
+					bounce('you are not control address');
+				if (!is_integer(+trigger.data.min_stake))
+					bounce("min_stake must be an integer");
+			}",
+			"messages": [
+				{
+					"app": "state",
+					"state": "{
+					var['min_stake'] = trigger.data.min_stake;
+					response['new_min_stake'] = trigger.data.min_stake;
+				}"
+				}
+			]
+		}
 		]
 	}
 }
