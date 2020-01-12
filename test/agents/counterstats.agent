@@ -385,11 +385,11 @@
 					{
 						"app": "state",
 						"state": "{
-						var['pool_' || $pool_id || '_number_of_rewards'] = false;
-						response['destroyed_pool'] = $pool_id;
-						response['amount'] = $number_of_rewards * $reward_amount;
-						response['message'] = "destroyed reward pool " || $pool_id;
-					}"
+							var['pool_' || $pool_id || '_number_of_rewards'] = false;
+							response['destroyed_pool'] = $pool_id;
+							response['amount'] = $number_of_rewards * $reward_amount;
+							response['message'] = "destroyed reward pool " || $pool_id;
+						}"
 					}
 				]
 			},
@@ -408,11 +408,11 @@
 					{
 						"app": "state",
 						"state": "{
-						var['nickname_' || trigger.address] = trigger.data.nickname;
-						response['your_address'] = trigger.address;
-						response['nickname'] = trigger.data.nickname;
-						response['message'] = "Nickname changed for " || trigger.data.nickname;
-					}"
+							var['nickname_' || trigger.address] = trigger.data.nickname;
+							response['your_address'] = trigger.address;
+							response['nickname'] = trigger.data.nickname;
+							response['message'] = "Nickname changed for " || trigger.data.nickname;
+						}"
 					}
 				]
 			},
@@ -431,36 +431,36 @@
 					{
 						"app": "state",
 						"state": "{
-						var['nickname_' || trigger.address] = trigger.data.nickname;
-						response['your_address'] = trigger.address;
-						response['nickname'] = trigger.data.nickname;
-						response['message'] = "Nickname changed for " || trigger.data.nickname;
-					}"
+							var['nickname_' || trigger.address] = trigger.data.nickname;
+							response['your_address'] = trigger.address;
+							response['nickname'] = trigger.data.nickname;
+							response['message'] = "Nickname changed for " || trigger.data.nickname;
+						}"
 					}
 				]
 			},
 			{
-			"if": "{trigger.data.control_address}",
-			"init":"{
-				if (var['control_address'] AND var['control_address'] != trigger.address)
-					bounce('you are not control address');
-				if(!is_valid_address(trigger.data.control_address))
-					bounce('new control address is not a valid address');
-			}",
-			"messages": [
-				{
-					"app": "state",
-					"state": "{
-					var['control_address'] = trigger.data.control_address;
-					response['new_control_address'] = trigger.data.control_address;
-				}"
-				}
-			]
-		},
+				"if": "{trigger.data.control_address}",
+				"init":"{
+					if (var['control_address'] AND var['control_address'] != trigger.address)
+						bounce('you are not control address');
+					if(!is_valid_address(trigger.data.control_address))
+						bounce('new control address is not a valid address');
+				}",
+				"messages": [
+					{
+						"app": "state",
+						"state": "{
+							var['control_address'] = trigger.data.control_address;
+							response['new_control_address'] = trigger.data.control_address;
+						}"
+					}
+				]
+			},
 		{
 			"if": "{trigger.data.min_reward}",
 			"init":"{
-				if (var['control_address'] != trigger.address)
+				if (!var['control_address'] OR var['control_address'] != trigger.address)
 					bounce('you are not control address');
 				if (!is_integer(+trigger.data.min_reward))
 					bounce("min_reward must be an integer");
@@ -469,16 +469,16 @@
 				{
 					"app": "state",
 					"state": "{
-					var['min_reward'] = trigger.data.min_reward;
-					response['new_min_reward'] = trigger.data.min_reward;
-				}"
+						var['min_reward'] = trigger.data.min_reward;
+						response['new_min_reward'] = trigger.data.min_reward;
+					}"
 				}
 			]
 		},
 		{
 			"if": "{trigger.data.min_stake}",
 			"init":"{
-				if (var['control_address'] != trigger.address)
+				if (!var['control_address'] OR var['control_address'] != trigger.address)
 					bounce('you are not control address');
 				if (!is_integer(+trigger.data.min_stake))
 					bounce("min_stake must be an integer");
@@ -487,9 +487,9 @@
 				{
 					"app": "state",
 					"state": "{
-					var['min_stake'] = trigger.data.min_stake;
-					response['new_min_stake'] = trigger.data.min_stake;
-				}"
+						var['min_stake'] = trigger.data.min_stake;
+						response['new_min_stake'] = trigger.data.min_stake;
+					}"
 				}
 			]
 		}

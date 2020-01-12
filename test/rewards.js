@@ -71,6 +71,71 @@ describe('Check AA counterstats rewards', function () {
 		await this.network.witnessUntilStable(unit)
 	})
 
+	it('set min reward without control address set', async () => {
+		const { unit, error } = await this.controler.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				min_reward: min_reward
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		expect(response.bounced).to.be.true
+		expect(response.response.error).to.be.equal('you are not control address')
+	})
+
+	it('set min stake without control address set', async () => {
+		const { unit, error } = await this.controler.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				min_stake: min_stake
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		expect(response.bounced).to.be.true
+		expect(response.response.error).to.be.equal('you are not control address')
+	})
+
+	it('set invalid control address', async () => {
+		const { unit, error } = await this.reporter_1.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				control_address: "gezheHTJMJL"
+			},
+		})
+		
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		expect(response.bounced).to.be.true
+		expect(response.response.error).to.be.equal('new control address is not a valid address')
+	})
 
 	it('set control address', async () => {
 		const control_address = await this.controler.getAddress()
@@ -92,6 +157,50 @@ describe('Check AA counterstats rewards', function () {
 		expect(response.response.responseVars.new_control_address).to.be.equal(control_address)
 		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
 		expect(vars["control_address"]).to.be.equal(control_address);
+	})
+
+	it('set min reward with wrong address', async () => {
+		const { unit, error } = await this.reporter_1.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				min_reward: min_reward
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		expect(response.bounced).to.be.true
+		expect(response.response.error).to.be.equal('you are not control address')
+	})
+
+	it('set min stake with wrong address', async () => {
+		const { unit, error } = await this.reporter_2.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				min_stake: min_stake
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		expect(response.bounced).to.be.true
+		expect(response.response.error).to.be.equal('you are not control address')
 	})
 
 	it('set min reward', async () => {
@@ -619,6 +728,91 @@ describe('Check AA counterstats rewards', function () {
 		expect(vars["pool_3_reward_amount"]).to.be.equal("20000000");
 		expect(vars["pool_3_number_of_rewards"]).to.be.equal("4");
 
+	})
+
+	it('set control address wrong control address', async () => {
+		const control_address = await this.reporter_1.getAddress()
+		const { unit, error } = await this.reporter_1.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				control_address: control_address
+			},
+		})
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		expect(response.bounced).to.be.true
+		expect(response.response.error).to.be.equal('you are not control address')
+	})
+
+	it('controler gives control to reporter 1', async () => {
+		const control_address = await this.reporter_1.getAddress()
+		const { unit, error } = await this.controler.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				control_address: control_address
+			},
+		})
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(response.bounced).to.be.false
+		expect(response.response.responseVars.new_control_address).to.be.equal(control_address)
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+		expect(vars["control_address"]).to.be.equal(control_address);
+	})
+
+	it('set min reward', async () => {
+		const { unit, error } = await this.reporter_1.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				min_reward: 800000
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(response.bounced).to.be.false
+		expect(response.response.responseVars.new_min_reward).to.be.equal(800000)
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+		expect(vars["min_reward"]).to.be.equal('800000');
+	})
+
+	it('set min stake', async () => {
+		const { unit, error } = await this.reporter_1.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				min_reward: 189166
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(response.bounced).to.be.false
+		expect(response.response.responseVars.new_min_reward).to.be.equal(189166)
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+		expect(vars["min_reward"]).to.be.equal('189166');
 	})
 
 	after(async () => {
