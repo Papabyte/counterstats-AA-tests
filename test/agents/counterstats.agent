@@ -122,7 +122,6 @@
 									"app": "state",
 									"state": "{
 									if ($bInitialStake){
-										var[$key || '_pair'] = $pair;
 										var[$pair || '_number'] += 1;
 										var[$key] = 'onreview';
 										var[$key || '_initial_outcome'] = $outcome;
@@ -144,7 +143,6 @@
 										response['resulting_outcome'] = $current_outcome;
 
 									$accepted_amount = $payment_amount - $excess;
-									var[$key || '_total_staked'] += $accepted_amount;
 									var[$key || '_total_staked_on_' || $outcome] += $accepted_amount;
 									var[$key || '_total_staked_on_' || $outcome || '_by_' || trigger.address] += $accepted_amount;
 
@@ -193,7 +191,6 @@
 									response['operation_id'] = $key;
 									response['staked_on_in'] = var[$key || '_total_staked_on_in'] otherwise 0;
 									response['staked_on_out'] = var[$key || '_total_staked_on_out'] otherwise 0;
-									response['your_address'] = trigger.address;
 									response['accepted_amount'] = $accepted_amount;
 									response['your_stake'] = var[$key || '_total_staked_on_' || $outcome || '_by_' || trigger.address];
 									}"
@@ -219,7 +216,7 @@
 							if ($initial_reporter_stake){
 								$reward = var['pool_' || $pool_id || '_reward_amount'] otherwise 0;
 								$total_winning_stake = var[$key || '_total_staked_on_' || $outcome];
-								$total_stake = var[$key || '_total_staked'];
+								$total_stake = var[$key || '_total_staked_on_in'] + var[$key || '_total_staked_on_out'];
 								$amount = round($initial_reporter_stake / $total_winning_stake * $total_stake);
 								$full_amount = $amount + $reward;
 							}
@@ -288,7 +285,7 @@
 							if (!$my_stake)
 								bounce("you didn't stake on the winning outcome or you already withdrew");
 							$total_winning_stake = var[$key || '_total_staked_on_' || $outcome];
-							$total_stake = var[$key || '_total_staked'];
+							$total_stake = var[$key || '_total_staked_on_in'] + var[$key || '_total_staked_on_out'];
 							$amount = round($my_stake / $total_winning_stake * $total_stake);
 							true
 						}",
@@ -349,7 +346,6 @@
 								var['pool_' || $pool_id || '_exchange'] = $exchange;
 							response['created_pool'] = $pool_id;
 							response['amount'] = $number_of_rewards * $reward_amount;
-							response['your_address'] = trigger.address;
 							response['message'] = "created a reward pool " || $pool_id || " of " || $expected_amount || " bytes";
 						}"
 					}
@@ -409,7 +405,6 @@
 						"app": "state",
 						"state": "{
 							var['nickname_' || trigger.address] = trigger.data.nickname;
-							response['your_address'] = trigger.address;
 							response['nickname'] = trigger.data.nickname;
 							response['message'] = "Nickname changed for " || trigger.data.nickname;
 						}"
@@ -432,7 +427,6 @@
 						"app": "state",
 						"state": "{
 							var['nickname_' || trigger.address] = trigger.data.nickname;
-							response['your_address'] = trigger.address;
 							response['nickname'] = trigger.data.nickname;
 							response['message'] = "Nickname changed for " || trigger.data.nickname;
 						}"

@@ -265,7 +265,6 @@ describe('Check AA counterstats rewards', function () {
 		expect(response.bounced).to.be.false
 		expect(response.response.responseVars.created_pool).to.be.equal(1)
 		expect(response.response.responseVars.amount).to.be.equal(paymentAmount)
-		expect(response.response.responseVars.your_address).to.be.equal(await this.donor_1.getAddress())
 		expect(response.response.responseVars.message).to.be.equal("created a reward pool 1 of 100000000 bytes")
 
 
@@ -300,7 +299,6 @@ describe('Check AA counterstats rewards', function () {
 
 		expect(response.response.responseVars.created_pool).to.be.equal(2)
 		expect(response.response.responseVars.amount).to.be.equal(paymentAmount)
-		expect(response.response.responseVars.your_address).to.be.equal(await this.donor_2.getAddress())
 		expect(response.response.responseVars.message).to.be.equal("created a reward pool 2 of 50000000 bytes")
 
 
@@ -690,7 +688,6 @@ describe('Check AA counterstats rewards', function () {
 
 		expect(response.response.responseVars.created_pool).to.be.equal(3)
 		expect(response.response.responseVars.amount).to.be.equal(paymentAmount)
-		expect(response.response.responseVars.your_address).to.be.equal(await this.donor_1.getAddress())
 		expect(response.response.responseVars.message).to.be.equal("created a reward pool 3 of 100000000 bytes")
 
 

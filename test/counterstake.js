@@ -158,7 +158,6 @@ describe('Check AA counterstats counterstaking', function () {
 
 		expect(response.response.responseVars.created_pool).to.be.equal(1)
 		expect(response.response.responseVars.amount).to.be.equal(paymentAmount)
-		expect(response.response.responseVars.your_address).to.be.equal(await this.donor_1.getAddress())
 		expect(response.response.responseVars.message).to.be.equal("created a reward pool 1 of 100000000 bytes")
 		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
 		expect(vars["pool_1_sponsor"]).to.be.equal(await this.donor_1.getAddress());
@@ -194,7 +193,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bittrex_8000_1")
 		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake)
 		expect(response.response.responseVars["staked_on_out"]).to.be.equal(0)
-		expect(response.response.responseVars["your_address"]).to.be.equal(await this.reporter_1.getAddress())
 		expect(response.response.responseVars["your_stake"]).to.be.equal(min_stake)
 		expect(response.response.responseVars["accepted_amount"]).to.be.equal(min_stake)
 
@@ -215,7 +213,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(vars["operation_bittrex_8000_1_url_proof_for_in_4"]).to.be.equal("http://url4.com")
 		expect(vars["operation_bittrex_8000_1_url_proof_for_in_5"]).to.be.equal("http://url5.com")
 		expect(vars["operation_bittrex_8000_1_url_id_proof_for_in"]).to.be.equal("5")
-		expect(vars["operation_bittrex_8000_1_total_staked"]).to.be.equal(min_stake.toString())
 		expect(vars["operation_bittrex_8000_1_total_staked_on_in"]).to.be.equal(min_stake.toString())
 		expect(vars["operation_bittrex_8000_1_total_staked_on_in_by_" + (await this.reporter_1.getAddress())]).to.be.equal(min_stake.toString())
 		expect(vars["wallet_8000_has_operation"]).to.be.equal("1")
@@ -452,7 +449,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bittrex_8000_1")
 		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake)
 		expect(response.response.responseVars["staked_on_out"]).to.be.equal(counterstake_1_rpt_2)
-		expect(response.response.responseVars["your_address"]).to.be.equal(await this.reporter_2.getAddress())
 		expect(response.response.responseVars["your_stake"]).to.be.equal(counterstake_1_rpt_2)
 		expect(response.response.responseVars["accepted_amount"]).to.be.equal(counterstake_1_rpt_2)
 
@@ -471,7 +467,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(vars["operation_bittrex_8000_1_url_proof_for_out_2"]).to.be.equal("http://urlout2.com")
 		expect(vars["operation_bittrex_8000_1_url_id_proof_for_in"]).to.be.equal("5")
 		expect(vars["operation_bittrex_8000_1_url_id_proof_for_out"]).to.be.equal("2")
-		expect(vars["operation_bittrex_8000_1_total_staked"]).to.be.equal((min_stake + counterstake_1_rpt_2).toString())
 		expect(vars["operation_bittrex_8000_1_total_staked_on_in"]).to.be.equal(min_stake.toString())
 		expect(vars["operation_bittrex_8000_1_total_staked_on_out"]).to.be.equal(counterstake_1_rpt_2.toString())
 		expect(vars["operation_bittrex_8000_1_total_staked_on_in_by_" + (await this.reporter_1.getAddress())]).to.be.equal(min_stake.toString())
@@ -501,7 +496,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bittrex_8000_1")
 		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake + counterstake_2_rpt_1)
 		expect(response.response.responseVars["staked_on_out"]).to.be.equal(counterstake_1_rpt_2)
-		expect(response.response.responseVars["your_address"]).to.be.equal(reporter_1_addr)
 		expect(response.response.responseVars["your_stake"]).to.be.equal(min_stake + counterstake_2_rpt_1)
 		expect(response.response.responseVars["accepted_amount"]).to.be.equal(counterstake_2_rpt_1)
 
@@ -519,7 +513,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(vars["operation_bittrex_8000_1_url_proof_for_in_6"]).to.be.equal("http://urlin6.com")
 		expect(vars["operation_bittrex_8000_1_url_id_proof_for_in"]).to.be.equal("6")
 		expect(vars["operation_bittrex_8000_1_url_id_proof_for_out"]).to.be.equal("2")
-		expect(vars["operation_bittrex_8000_1_total_staked"]).to.be.equal((min_stake + counterstake_1_rpt_2 + counterstake_2_rpt_1).toString())
 		expect(vars["operation_bittrex_8000_1_total_staked_on_in"]).to.be.equal((min_stake + counterstake_2_rpt_1).toString())
 		expect(vars["operation_bittrex_8000_1_total_staked_on_out"]).to.be.equal(counterstake_1_rpt_2.toString())
 		expect(vars["operation_bittrex_8000_1_total_staked_on_in_by_" + (reporter_1_addr)]).to.be.equal((min_stake + counterstake_2_rpt_1).toString())
@@ -703,7 +696,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bitretard_844566_1")
 		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake * 4)
 		expect(response.response.responseVars["staked_on_out"]).to.be.equal(0)
-		expect(response.response.responseVars["your_address"]).to.be.equal(await this.reporter_1.getAddress())
 		expect(response.response.responseVars["your_stake"]).to.be.equal(min_stake * 4)
 		expect(response.response.responseVars["accepted_amount"]).to.be.equal(min_stake * 4)
 
@@ -720,7 +712,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(vars["operation_bitretard_844566_1_pool_id"]).to.be.equal("1")
 		expect(vars["operation_bitretard_844566_1_url_proof_for_in_1"]).to.be.equal("http://urlretard1.com")
 		expect(vars["operation_bitretard_844566_1_url_id_proof_for_in"]).to.be.equal("1")
-		expect(vars["operation_bitretard_844566_1_total_staked"]).to.be.equal((min_stake * 4).toString())
 		expect(vars["operation_bitretard_844566_1_total_staked_on_in"]).to.be.equal((min_stake * 4).toString())
 		expect(vars["operation_bitretard_844566_1_total_staked_on_in_by_" + (await this.reporter_1.getAddress())]).to.be.equal((min_stake * 4).toString())
 
@@ -748,7 +739,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bitretard_844566_1")
 		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake * 4)
 		expect(response.response.responseVars["staked_on_out"]).to.be.equal(min_stake)
-		expect(response.response.responseVars["your_address"]).to.be.equal(await this.reporter_2.getAddress())
 		expect(response.response.responseVars["your_stake"]).to.be.equal(min_stake)
 		expect(response.response.responseVars["accepted_amount"]).to.be.equal(min_stake)
 
@@ -767,7 +757,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(vars["operation_bitretard_844566_1_url_proof_for_out_1"]).to.be.equal("http://urlretardout1.com")
 
 		expect(vars["operation_bitretard_844566_1_url_id_proof_for_in"]).to.be.equal("1")
-		expect(vars["operation_bitretard_844566_1_total_staked"]).to.be.equal((min_stake * 4 + min_stake).toString())
 		expect(vars["operation_bitretard_844566_1_total_staked_on_in"]).to.be.equal((min_stake * 4).toString())
 		expect(vars["operation_bitretard_844566_1_total_staked_on_out"]).to.be.equal((min_stake).toString())
 		expect(vars["operation_bitretard_844566_1_total_staked_on_out_by_" + (await this.reporter_2.getAddress())]).to.be.equal((min_stake).toString())
@@ -795,7 +784,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bitretard_844566_1")
 		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake * 4)
 		expect(response.response.responseVars["staked_on_out"]).to.be.equal(min_stake * 6)
-		expect(response.response.responseVars["your_address"]).to.be.equal(await this.reporter_3.getAddress())
 		expect(response.response.responseVars["your_stake"]).to.be.equal(min_stake*5)
 		expect(response.response.responseVars["accepted_amount"]).to.be.equal(min_stake*5)
 
@@ -813,7 +801,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(vars["operation_bitretard_844566_1_url_proof_for_in_1"]).to.be.equal("http://urlretard1.com")
 		expect(vars["operation_bitretard_844566_1_url_id_proof_for_in"]).to.be.equal("1")
 		expect(vars["operation_bitretard_844566_1_url_proof_for_out_2"]).to.be.equal("http://urlretardout2.com")
-		expect(vars["operation_bitretard_844566_1_total_staked"]).to.be.equal((min_stake * 10).toString())
 		expect(vars["operation_bitretard_844566_1_total_staked_on_in"]).to.be.equal((min_stake * 4).toString())
 		expect(vars["operation_bitretard_844566_1_total_staked_on_out"]).to.be.equal((min_stake * 6).toString())
 		expect(vars["operation_bitretard_844566_1_total_staked_on_out_by_" + (await this.reporter_3.getAddress())]).to.be.equal((min_stake*5).toString())
@@ -885,7 +872,6 @@ describe('Check AA counterstats counterstaking', function () {
 		const { response } = await this.network.getAaResponseToUnit(unit)
 		expect(error).to.be.null
 		expect(unit).to.be.validUnit
-		expect(response.response.responseVars.your_address).to.be.equal(await this.reporter_2.getAddress())
 		expect(response.response.responseVars.nickname).to.be.equal("reporter2")
 		expect(response.response.responseVars.message).to.be.equal("Nickname changed for reporter2")
 
@@ -905,7 +891,6 @@ describe('Check AA counterstats counterstaking', function () {
 		const { response } = await this.network.getAaResponseToUnit(unit)
 		expect(error).to.be.null
 		expect(unit).to.be.validUnit
-		expect(response.response.responseVars.your_address).to.be.equal(await this.reporter_1.getAddress())
 		expect(response.response.responseVars.nickname).to.be.equal("reporter1")
 		expect(response.response.responseVars.message).to.be.equal("Nickname changed for reporter1")
 
@@ -926,7 +911,6 @@ describe('Check AA counterstats counterstaking', function () {
 		const { response } = await this.network.getAaResponseToUnit(unit)
 		expect(error).to.be.null
 		expect(unit).to.be.validUnit
-		expect(response.response.responseVars.your_address).to.be.equal(await this.reporter_2.getAddress())
 		expect(response.response.responseVars.nickname).to.be.equal("reporter2bis")
 		expect(response.response.responseVars.message).to.be.equal("Nickname changed for reporter2bis")
 
@@ -1111,7 +1095,6 @@ describe('Check AA counterstats counterstaking', function () {
 			expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bittrex_8000_2")
 			expect(response.response.responseVars["staked_on_out"]).to.be.equal(min_stake)
 			expect(response.response.responseVars["staked_on_in"]).to.be.equal(0)
-			expect(response.response.responseVars["your_address"]).to.be.equal(await this.reporter_1.getAddress())
 			expect(response.response.responseVars["your_stake"]).to.be.equal(min_stake)
 			expect(response.response.responseVars["accepted_amount"]).to.be.equal(min_stake)
 	
@@ -1128,7 +1111,6 @@ describe('Check AA counterstats counterstaking', function () {
 			expect(vars["operation_bittrex_8000_2_pool_id"]).to.be.equal("1")
 			expect(vars["operation_bittrex_8000_2_url_proof_for_out_1"]).to.be.equal("http://url1.com")
 			expect(vars["operation_bittrex_8000_2_url_id_proof_for_out"]).to.be.equal("1")
-			expect(vars["operation_bittrex_8000_2_total_staked"]).to.be.equal(min_stake.toString())
 			expect(vars["operation_bittrex_8000_2_total_staked_on_out"]).to.be.equal(min_stake.toString())
 			expect(vars["operation_bittrex_8000_2_total_staked_on_out_by_" + (await this.reporter_1.getAddress())]).to.be.equal(min_stake.toString())
 			expect(vars["wallet_8000_has_operation"]).to.be.equal("1");
@@ -1191,7 +1173,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bitfool_8000_1")
 		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake * 5)
 		expect(response.response.responseVars["staked_on_out"]).to.be.equal(0)
-		expect(response.response.responseVars["your_address"]).to.be.equal(await this.reporter_1.getAddress())
 		expect(response.response.responseVars["your_stake"]).to.be.equal(min_stake * 5)
 		expect(response.response.responseVars["accepted_amount"]).to.be.equal(min_stake * 5)
 
@@ -1207,7 +1188,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(vars["operation_bitfool_8000_1_pool_id"]).to.be.undefined
 		expect(vars["operation_bitfool_8000_1_url_proof_for_in_1"]).to.be.equal("https://link1.com")
 		expect(vars["operation_bitfool_8000_1_url_id_proof_for_in"]).to.be.equal("1")
-		expect(vars["operation_bitfool_8000_1_total_staked"]).to.be.equal((min_stake * 5).toString())
 		expect(vars["operation_bitfool_8000_1_total_staked_on_in"]).to.be.equal((min_stake * 5).toString())
 		expect(vars["operation_bitfool_8000_1_total_staked_on_in_by_" + (await this.reporter_1.getAddress())]).to.be.equal((min_stake * 5).toString())
 		expect(vars["wallet_8000_has_operation"]).to.be.equal("1")
