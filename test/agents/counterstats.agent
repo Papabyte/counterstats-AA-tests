@@ -63,14 +63,14 @@
 								return false;
 							if ($payment_amount <= 10000)
 								return false;
-							if ($payment_amount < $min_stake)
-								bounce("min stake is" || $min_stake);
 							if ($specified_key)
 								bounce("you can specify operation id only for commit or withdrawal");
 							$outcome = $add_wallet_id ? 'in' : 'out';
 							$bInitialStake = !var[$key];
 
 							if ($bInitialStake){
+								if ($payment_amount < $min_stake)
+									bounce("min stake is" || $min_stake);
 								if($remove_wallet_id AND (!var[$pair ||"_committed_outcome"] OR var[$pair||"_committed_outcome"] == $outcome))
 									bounce("this wallet id is not active");
 								if($add_wallet_id AND var[$pair||"_committed_outcome"] AND $outcome == var[$pair||"_committed_outcome"])
