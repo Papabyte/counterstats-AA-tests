@@ -426,6 +426,27 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(response.response.error).to.be.equal("url_5 cannot be over 256 chars")
 	})
 
+
+	it('reporter 2 counterstake bittrex not enough left', async () => {
+		const { unit, error } = await this.reporter_2.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: min_stake*coeff - 10000,
+			data: {
+				remove_wallet_id: 8000,
+				exchange: 'bittrex',
+				url_1: 'http://urlout1.com',
+				url_2: 'http://urlout2.com'
+			},
+		})
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(response.bounced).to.be.true
+		expect(response.response.error).to.be.equal("amount left cannot be <= 10000")
+	})
+
 	const counterstake_1_rpt_2 = min_stake*coeff
 	it('reporter 2 counterstake bittrex', async () => {
 		const { unit, error } = await this.reporter_2.triggerAaWithData({
@@ -444,6 +465,7 @@ describe('Check AA counterstats counterstaking', function () {
 
 		const { response } = await this.network.getAaResponseToUnit(unit)
 		await this.network.witnessUntilStable(response.response_unit)
+		expect(response.bounced).to.be.false
 		expect(response.response.responseVars["proposed_outcome"]).to.be.equal("out")
 		expect(response.response.responseVars["resulting_outcome"]).to.be.equal("out")
 		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bittrex_8000_1")
@@ -452,7 +474,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(response.response.responseVars["your_stake"]).to.be.equal(counterstake_1_rpt_2)
 		expect(response.response.responseVars["accepted_amount"]).to.be.equal(counterstake_1_rpt_2)
 
-		expect(response.bounced).to.be.false
 
 		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
 
@@ -475,7 +496,7 @@ describe('Check AA counterstats counterstaking', function () {
 	})
 
 	const counterstake_2_rpt_1 = counterstake_1_rpt_2*coeff - min_stake 
-	it('reporter 2 counterstake bittrex', async () => {
+	it('reporter 1 counterstake bittrex', async () => {
 		const { unit, error } = await this.reporter_1.triggerAaWithData({
 			toAddress: this.aaAddress,
 			amount: counterstake_2_rpt_1 + 200000,
@@ -1229,7 +1250,7 @@ describe('Check AA counterstats counterstaking', function () {
 
 	after(async () => {
 		// uncomment this line to pause test execution to get time for Obyte DAG explorer inspection
-	//	await Utils.sleep(3600 * 1000)
+		//await Utils.sleep(3600 * 1000)
 		await this.network.stop()
 	})
 })

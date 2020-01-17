@@ -99,7 +99,10 @@
 							$stake_on_current_outcome = var[$key || '_total_staked_on_' || $current_outcome];
 							$stake_on_proposed_outcome = var[$key || '_total_staked_on_' || $outcome];
 							$required_to_challenge = round($coef * $stake_on_current_outcome);
-							$would_override_current_outcome = ($stake_on_proposed_outcome + $payment_amount >= $required_to_challenge);
+							$amount_left_to_challenge = $required_to_challenge - $stake_on_proposed_outcome - $payment_amount;
+							if ($amount_left_to_challenge <= 10000 AND $amount_left_to_challenge > 0)
+								bounce('amount left cannot be <= 10000');
+							$would_override_current_outcome = $amount_left_to_challenge <= 0;
 							if ($would_override_current_outcome)
 								$excess = $stake_on_proposed_outcome + $payment_amount - $required_to_challenge;
 							true
