@@ -166,6 +166,96 @@ describe('Check AA counterstats counterstaking', function () {
 
 	})
 
+
+	it('reporter 1 add a wallet to foxbit', async () => {
+		const { unit, error } = await this.reporter_1.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: min_stake,
+			data: {
+				add_wallet_id: 2000,
+				exchange: 'foxbit',
+				url_1: 'http://url1.com',
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+		await this.network.witnessUntilStable(response.response_unit)
+		expect(response.response.responseVars["expected_reward"]).to.be.undefined
+		expect(response.response.responseVars["proposed_outcome"]).to.be.equal("in")
+		expect(response.response.responseVars["resulting_outcome"]).to.be.equal("in")
+		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_foxbit_2000_1")
+		expect(response.response.responseVars["staked_on_in"]).to.be.equal(min_stake)
+		expect(response.response.responseVars["staked_on_out"]).to.be.equal(0)
+		expect(response.response.responseVars["your_stake"]).to.be.equal(min_stake)
+		expect(response.response.responseVars["accepted_amount"]).to.be.equal(min_stake)
+
+		expect(response.bounced).to.be.false
+
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+
+		expect(vars["pair_foxbit_2000_number"]).to.be.equal("1")
+		expect(vars["operation_foxbit_2000_1"]).to.be.equal("onreview")
+		expect(vars["operation_foxbit_2000_1_initial_outcome"]).to.be.equal("in")
+		expect(vars["operation_foxbit_2000_1_initial_reporter"]).to.be.equal(await this.reporter_1.getAddress())
+		expect(vars["operation_foxbit_2000_1_url_proof_for_in_1"]).to.be.equal("http://url1.com")
+		expect(vars["operation_foxbit_2000_1_url_id_proof_for_in"]).to.be.equal("1")
+		expect(vars["operation_foxbit_2000_1_total_staked_on_in"]).to.be.equal(min_stake.toString())
+		expect(vars["operation_foxbit_2000_1_total_staked_on_in_by_" + (await this.reporter_1.getAddress())]).to.be.equal(min_stake.toString())
+		expect(vars["wallet_2000_has_operation"]).to.be.equal("1")
+	})
+
+
+
+	it('reporter 2 commit', async () => {
+		const shift = (challenge_period_length+ 1000) + 's'
+		await this.network.timetravel({ shift: shift})
+		const { unit, error } = await this.reporter_2.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				operation_id: 'operation_foxbit_2000_1',
+				commit: "1"
+			},
+		})
+
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+		const reporter_1_addr = await this.reporter_1.getAddress();
+		const { response } = await this.network.getAaResponseToUnit(unit)
+		await this.network.witnessUntilStable(response.response_unit)
+		const paid_out_amount = min_stake
+		expect(response.response.responseVars["paid_out_amount"]).to.be.equal(paid_out_amount)
+		expect(response.response.responseVars["paid_out_address"]).to.be.equal(reporter_1_addr)
+		expect(response.response.responseVars["committed_outcome"]).to.be.equal("in")
+		expect(response.response.responseVars["pair"]).to.be.equal("pair_foxbit_2000")
+		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_foxbit_2000_1")
+
+		expect(response.bounced).to.be.false
+
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+
+		expect(vars["pair_foxbit_2000_committed_outcome"]).to.be.equal("in")
+		expect(vars["operation_foxbit_2000_1"]).to.be.equal("committed")
+
+		expect(vars["operation_foxbit_2000_1_total_staked_on_in_by_" + (reporter_1_addr)]).to.be.undefined
+	
+		const { unitObj: payoutUnit, error: payoutError } = await this.deployer.getUnitInfo({ unit: response.response_unit })
+		expect(payoutError).to.be.null
+
+		const paymentMessage = payoutUnit.unit.messages.find(m => m.app === 'payment')
+		const payout = paymentMessage.payload.outputs.find(out => reporter_1_addr.includes(out.address))
+		expect(payout.amount).to.be.equal(paid_out_amount)
+
+		const payload = payoutUnit.unit.messages.find(m => m.app === 'data_feed')
+		expect(payload.payload.foxbit).to.be.equal('2000')
+	})
+
+
+
+
 	it('reporter 1 add a wallet to bittrex', async () => {
 		const { unit, error } = await this.reporter_1.triggerAaWithData({
 			toAddress: this.aaAddress,
@@ -862,23 +952,6 @@ describe('Check AA counterstats counterstaking', function () {
 		expect(unit).to.be.validUnit
 		expect(response.bounced).to.be.true
 		expect(response.response.error).to.be.equal("Nickname can't be over 50 chars")
-
-	})
-
-	it('nickname contains underscore', async () => {
-		const { unit, error } = await this.reporter_2.triggerAaWithData({
-			toAddress: this.aaAddress,
-			amount: 10000,
-			data: {
-				nickname: "ffd_gez"
-			},
-		})
-		const { response } = await this.network.getAaResponseToUnit(unit)
-
-		expect(error).to.be.null
-		expect(unit).to.be.validUnit
-		expect(response.bounced).to.be.true
-		expect(response.response.error).to.be.equal("Nickname cannot contain underscore")
 
 	})
 

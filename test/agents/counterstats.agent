@@ -400,30 +400,6 @@
 						bounce('Nickname must be over at least 3 chars');
 					if ($nickname AND length($nickname) > 50)
 						bounce("Nickname can't be over 50 chars");
-					if ($nickname AND contains($nickname, '_'))
-						bounce('Nickname cannot contain underscore');
-				}",
-				"messages": [
-					{
-						"app": "state",
-						"state": "{
-							var['nickname_' || trigger.address] = trigger.data.nickname;
-							response['nickname'] = trigger.data.nickname;
-							response['message'] = "Nickname changed for " || trigger.data.nickname;
-						}"
-					}
-				]
-			},
-			{
-				"if": "{trigger.data.nickname}",
-				"init":"{
-					$nickname = trigger.data.nickname;
-					if ($nickname AND length($nickname) < 3)
-						bounce('Nickname must be over at least 3 chars');
-					if ($nickname AND length($nickname) > 50)
-						bounce("Nickname can't be over 50 chars");
-					if ($nickname AND contains($nickname, '_'))
-						bounce('Nickname cannot contain underscore');
 				}",
 				"messages": [
 					{
