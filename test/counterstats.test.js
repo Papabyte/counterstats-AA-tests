@@ -15,7 +15,7 @@ describe('Check AA counterstats counterstaking', function () {
 	this.timeout(120 * 1000)
 
 	before(async () => {
-		this.network = await Network.create()
+		this.network = await Network.create().run()
 		this.explorer = await this.network.newObyteExplorer().ready()
 		this.genesis = await this.network.getGenesisNode().ready()
 		this.deployer = await this.network.newHeadlessWallet().ready()
@@ -62,7 +62,7 @@ describe('Check AA counterstats counterstaking', function () {
 
 
 	it('Deploy counterstats AA', async () => {
-		const { address, unit, error } = await this.deployer.deployAgent(path.join(__dirname, './agents/counterstats.agent'))
+		const { address, unit, error } = await this.deployer.deployAgent(path.join(__dirname, '../counterstats.ojson'))
 
 		expect(error).to.be.null
 		expect(unit).to.be.validUnit
@@ -245,11 +245,12 @@ describe('Check AA counterstats counterstaking', function () {
 		const { unitObj: payoutUnit, error: payoutError } = await this.deployer.getUnitInfo({ unit: response.response_unit })
 		expect(payoutError).to.be.null
 
-		const paymentMessage = payoutUnit.unit.messages.find(m => m.app === 'payment')
-		const payout = paymentMessage.payload.outputs.find(out => reporter_1_addr.includes(out.address))
-		expect(payout.amount).to.be.equal(paid_out_amount)
+		expect(Utils.hasOnlyTheseExternalPayments(payoutUnit, [{
+			address: reporter_1_addr,
+			amount: paid_out_amount
+		}])).to.be.true
 
-		const payload = payoutUnit.unit.messages.find(m => m.app === 'data_feed')
+		const payload = payoutUnit.messages.find(m => m.app === 'data_feed')
 		expect(payload.payload.foxbit).to.be.equal('2000')
 	})
 
@@ -633,9 +634,10 @@ describe('Check AA counterstats counterstaking', function () {
 		const { unitObj: refundUnit, error: refundError } = await this.deployer.getUnitInfo({ unit: response.response_unit })
 		expect(refundError).to.be.null
 
-		const paymentMessage = refundUnit.unit.messages.find(m => m.app === 'payment')
-		const refund = paymentMessage.payload.outputs.find(out => reporter_1_addr.includes(out.address))
-		expect(refund.amount).to.be.equal(200000 - overpayment_fee)
+		expect(Utils.hasOnlyTheseExternalPayments(refundUnit, [{
+			address: reporter_1_addr,
+			amount: 200000 - overpayment_fee
+		}])).to.be.true
 
 	})
 
@@ -776,11 +778,12 @@ describe('Check AA counterstats counterstaking', function () {
 		const { unitObj: payoutUnit, error: payoutError } = await this.deployer.getUnitInfo({ unit: response.response_unit })
 		expect(payoutError).to.be.null
 
-		const paymentMessage = payoutUnit.unit.messages.find(m => m.app === 'payment')
-		const payout = paymentMessage.payload.outputs.find(out => reporter_1_addr.includes(out.address))
-		expect(payout.amount).to.be.equal(paid_out_amount)
+		expect(Utils.hasOnlyTheseExternalPayments(payoutUnit, [{
+			address: reporter_1_addr,
+			amount: paid_out_amount
+		}])).to.be.true
 
-		const payload = payoutUnit.unit.messages.find(m => m.app === 'data_feed')
+		const payload = payoutUnit.messages.find(m => m.app === 'data_feed')
 		expect(payload.payload.bittrex).to.be.equal(8000)
 	})
 
@@ -1098,10 +1101,10 @@ describe('Check AA counterstats counterstaking', function () {
 		const { unitObj: payoutUnit, error: payoutError } = await this.deployer.getUnitInfo({ unit: response.response_unit })
 		expect(payoutError).to.be.null
 
-		const paymentMessage = payoutUnit.unit.messages.find(m => m.app === 'payment')
-		const payout = paymentMessage.payload.outputs.find(out => address_reporter_2.includes(out.address))
-
-		expect(payout.amount).to.be.equal(payout_reporter_2)
+		expect(Utils.hasOnlyTheseExternalPayments(payoutUnit, [{
+			address: address_reporter_2,
+			amount: payout_reporter_2
+		}])).to.be.true
 
 	})
 
@@ -1136,113 +1139,114 @@ describe('Check AA counterstats counterstaking', function () {
 
 		const { unitObj: payoutUnit, error: payoutError } = await this.deployer.getUnitInfo({ unit: response.response_unit })
 		expect(payoutError).to.be.null
-		const paymentMessage = payoutUnit.unit.messages.find(m => m.app === 'payment')
-		const payout = paymentMessage.payload.outputs.find(out => address_reporter_3.includes(out.address))
 
-		expect(payout.amount).to.be.equal(payout_reporter_3)
+		expect(Utils.hasOnlyTheseExternalPayments(payoutUnit, [{
+			address: address_reporter_3,
+			amount: payout_reporter_3
+		}])).to.be.true
 
+	})
+
+	it('reporter 1 add wallet in operation', async () => {
+		const { unit, error } = await this.reporter_1.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: min_stake,
+			data: {
+				exchange: 'bitfool',
+				pool_id: 1,
+				add_wallet_id: 8000
+			},
 		})
 
-		it('reporter 1 add wallet in operation', async () => {
-			const { unit, error } = await this.reporter_1.triggerAaWithData({
-				toAddress: this.aaAddress,
-				amount: min_stake,
-				data: {
-					exchange: 'bitfool',
-					pool_id: 1,
-					add_wallet_id: 8000
-				},
-			})
-	
-			expect(error).to.be.null
-			expect(unit).to.be.validUnit
-	
-			const { response } = await this.network.getAaResponseToUnit(unit)
-			await this.network.witnessUntilStable(response.response_unit)
-	
-			expect(response.bounced).to.be.true
-			expect(response.response.error).to.be.equal("this wallet id belongs or is being added to another exchange")
-	
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+
+		const { response } = await this.network.getAaResponseToUnit(unit)
+		await this.network.witnessUntilStable(response.response_unit)
+
+		expect(response.bounced).to.be.true
+		expect(response.response.error).to.be.equal("this wallet id belongs or is being added to another exchange")
+
+	})
+
+	it('reporter 1 remove from bittrex', async () => {
+		const { unit, error } = await this.reporter_1.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: min_stake,
+			data: {
+				exchange: 'bittrex',
+				pool_id: 1,
+				remove_wallet_id: 8000,
+				url_1: "http://url1.com"
+			},
 		})
 
-		it('reporter 1 remove from bittrex', async () => {
-			const { unit, error } = await this.reporter_1.triggerAaWithData({
-				toAddress: this.aaAddress,
-				amount: min_stake,
-				data: {
-					exchange: 'bittrex',
-					pool_id: 1,
-					remove_wallet_id: 8000,
-					url_1: "http://url1.com"
-				},
-			})
-	
-			expect(error).to.be.null
-			expect(unit).to.be.validUnit
-	
-			const { response } = await this.network.getAaResponseToUnit(unit)
-			await this.network.witnessUntilStable(response.response_unit)
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
 
-			expect(response.response.responseVars["expected_reward"]).to.be.equal(20000000)
-			expect(response.response.responseVars["proposed_outcome"]).to.be.equal("out")
-			expect(response.response.responseVars["resulting_outcome"]).to.be.equal("out")
-			expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bittrex_8000_2")
-			expect(response.response.responseVars["staked_on_out"]).to.be.equal(min_stake)
-			expect(response.response.responseVars["staked_on_in"]).to.be.equal(0)
-			expect(response.response.responseVars["your_stake"]).to.be.equal(min_stake)
-			expect(response.response.responseVars["accepted_amount"]).to.be.equal(min_stake)
-	
-			expect(response.bounced).to.be.false
-	
-			const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
-	
-			expect(vars["pool_1_number_of_rewards"]).to.be.equal("3");
-	
-			expect(vars["pair_bittrex_8000_number"]).to.be.equal("2")
-			expect(vars["operation_bittrex_8000_2"]).to.be.equal("onreview")
-			expect(vars["operation_bittrex_8000_2_initial_outcome"]).to.be.equal("out")
-			expect(vars["operation_bittrex_8000_2_initial_reporter"]).to.be.equal(await this.reporter_1.getAddress())
-			expect(vars["operation_bittrex_8000_2_pool_id"]).to.be.equal("1")
-			expect(vars["operation_bittrex_8000_2_url_proof_for_out_1"]).to.be.equal("http://url1.com")
-			expect(vars["operation_bittrex_8000_2_url_id_proof_for_out"]).to.be.equal("1")
-			expect(vars["operation_bittrex_8000_2_total_staked_on_out"]).to.be.equal(min_stake.toString())
-			expect(vars["operation_bittrex_8000_2_total_staked_on_out_by_" + (await this.reporter_1.getAddress())]).to.be.equal(min_stake.toString())
-			expect(vars["wallet_8000_has_operation"]).to.be.equal("1");
-	
+		const { response } = await this.network.getAaResponseToUnit(unit)
+		await this.network.witnessUntilStable(response.response_unit)
+
+		expect(response.response.responseVars["expected_reward"]).to.be.equal(20000000)
+		expect(response.response.responseVars["proposed_outcome"]).to.be.equal("out")
+		expect(response.response.responseVars["resulting_outcome"]).to.be.equal("out")
+		expect(response.response.responseVars["operation_id"]).to.be.equal("operation_bittrex_8000_2")
+		expect(response.response.responseVars["staked_on_out"]).to.be.equal(min_stake)
+		expect(response.response.responseVars["staked_on_in"]).to.be.equal(0)
+		expect(response.response.responseVars["your_stake"]).to.be.equal(min_stake)
+		expect(response.response.responseVars["accepted_amount"]).to.be.equal(min_stake)
+
+		expect(response.bounced).to.be.false
+
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+
+		expect(vars["pool_1_number_of_rewards"]).to.be.equal("3");
+
+		expect(vars["pair_bittrex_8000_number"]).to.be.equal("2")
+		expect(vars["operation_bittrex_8000_2"]).to.be.equal("onreview")
+		expect(vars["operation_bittrex_8000_2_initial_outcome"]).to.be.equal("out")
+		expect(vars["operation_bittrex_8000_2_initial_reporter"]).to.be.equal(await this.reporter_1.getAddress())
+		expect(vars["operation_bittrex_8000_2_pool_id"]).to.be.equal("1")
+		expect(vars["operation_bittrex_8000_2_url_proof_for_out_1"]).to.be.equal("http://url1.com")
+		expect(vars["operation_bittrex_8000_2_url_id_proof_for_out"]).to.be.equal("1")
+		expect(vars["operation_bittrex_8000_2_total_staked_on_out"]).to.be.equal(min_stake.toString())
+		expect(vars["operation_bittrex_8000_2_total_staked_on_out_by_" + (await this.reporter_1.getAddress())]).to.be.equal(min_stake.toString())
+		expect(vars["wallet_8000_has_operation"]).to.be.equal("1");
+
+	})
+
+
+	it('reporter 2 commit', async () => {
+		const shift = (challenge_period_length+ 1000) + 's'
+		await this.network.timetravel({ shift: shift})
+		const { unit, error } = await this.reporter_2.triggerAaWithData({
+			toAddress: this.aaAddress,
+			amount: 10000,
+			data: {
+				operation_id: 'operation_bittrex_8000_2',
+				exchange: 'bittrex',
+				commit: "1"
+			},
 		})
 
+		expect(error).to.be.null
+		expect(unit).to.be.validUnit
+		const { response } = await this.network.getAaResponseToUnit(unit)
+		await this.network.witnessUntilStable(response.response_unit)
 
-		it('reporter 2 commit', async () => {
-			const shift = (challenge_period_length+ 1000) + 's'
-			await this.network.timetravel({ shift: shift})
-			const { unit, error } = await this.reporter_2.triggerAaWithData({
-				toAddress: this.aaAddress,
-				amount: 10000,
-				data: {
-					operation_id: 'operation_bittrex_8000_2',
-					exchange: 'bittrex',
-					commit: "1"
-				},
-			})
-	
-			expect(error).to.be.null
-			expect(unit).to.be.validUnit
-			const { response } = await this.network.getAaResponseToUnit(unit)
-			await this.network.witnessUntilStable(response.response_unit)
+		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
 
-			const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
+		expect(vars["wallet_8000_has_operation"]).to.be.undefined;
+		const { unitObj: payoutUnit, error: payoutError } = await this.deployer.getUnitInfo({ unit: response.response_unit })
+		expect(payoutError).to.be.null
 
-			expect(vars["wallet_8000_has_operation"]).to.be.undefined;
-			const { unitObj: payoutUnit, error: payoutError } = await this.deployer.getUnitInfo({ unit: response.response_unit })
-			expect(payoutError).to.be.null
+		expect(Utils.hasOnlyTheseExternalPayments(payoutUnit, [{
+			address: await this.reporter_1.getAddress(),
+			amount: 20000000 + min_stake
+		}])).to.be.true
 
-			expect(Utils.hasOnlyTheseExternalPayments(payoutUnit, [{
-				address: await this.reporter_1.getAddress(),
-				amount: 20000000 + min_stake
-			}])).to.be.true
-
-			const payload = payoutUnit.unit.messages.find(m => m.app === 'data_feed')
-			expect(payload.payload.bittrex).to.be.equal('-8000')
+		const payload = payoutUnit.messages.find(m => m.app === 'data_feed')
+		expect(payload.payload.bittrex).to.be.equal('-8000')
 
 	})
 
@@ -1316,7 +1320,7 @@ describe('Check AA counterstats counterstaking', function () {
 			amount: min_stake * 5
 		}])).to.be.true
 
-		const payload = payoutUnit.unit.messages.find(m => m.app === 'data_feed')
+		const payload = payoutUnit.messages.find(m => m.app === 'data_feed')
 		expect(payload.payload.bitfool).to.be.equal('8000')
 
 })

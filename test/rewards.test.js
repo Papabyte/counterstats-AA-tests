@@ -14,7 +14,7 @@ describe('Check AA counterstats rewards', function () {
 	this.timeout(120 * 1000)
 
 	before(async () => {
-		this.network = await Network.create()
+		this.network = await Network.create().run()
 		this.explorer = await this.network.newObyteExplorer().ready()
 		this.genesis = await this.network.getGenesisNode().ready()
 		this.deployer = await this.network.newHeadlessWallet().ready()
@@ -60,7 +60,7 @@ describe('Check AA counterstats rewards', function () {
 
 
 	it('Deploy counterstats AA', async () => {
-		const { address, unit, error } = await this.deployer.deployAgent(path.join(__dirname, './agents/counterstats.agent'))
+		const { address, unit, error } = await this.deployer.deployAgent(path.join(__dirname, '../counterstats.ojson'))
 
 		expect(error).to.be.null
 		expect(unit).to.be.validUnit
@@ -483,9 +483,12 @@ describe('Check AA counterstats rewards', function () {
 		const { unitObj: payoutUnit, error: payoutError } = await this.deployer.getUnitInfo({ unit: response.response_unit })
 		expect(payoutError).to.be.null
 		const address_donor_1 = await this.donor_1.getAddress()
-		const paymentMessage = payoutUnit.unit.messages.find(m => m.app === 'payment')
-		const payout = paymentMessage.payload.outputs.find(out => address_donor_1.includes(out.address))
-		expect(payout.amount).to.be.equal(100e6)
+
+		expect(Utils.hasOnlyTheseExternalPayments(payoutUnit, [{
+			address: address_donor_1,
+			amount: 100e6
+		}])).to.be.true
+
 
 		const { vars } = await this.deployer.readAAStateVars(this.aaAddress)
 

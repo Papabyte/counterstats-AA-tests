@@ -1,4 +1,4 @@
-{
+["autonomous agent", {
 	"init": "{
 		if (trigger.output[[asset!=base]].asset != 'none')
 			bounce('foreign coins');
@@ -468,4 +468,4 @@
 		}
 		]
 	}
-}
+}]
